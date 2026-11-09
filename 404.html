@@ -214,6 +214,84 @@
 
   .contact.copied .copy-note { opacity: 1; }
 
+  .form-wrap { margin-top: 30px; }
+
+  .form-grid { display: grid; gap: 12px; }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .field input,
+  .field textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    background: #fbfcfe;
+    border: 1px solid rgba(27, 83, 153, 0.18);
+    border-radius: 12px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+    resize: vertical;
+  }
+
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(27, 83, 153, 0.12);
+  }
+
+  .consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 12.5px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .consent input { margin-top: 3px; accent-color: var(--blue); }
+
+  .submit {
+    appearance: none;
+    border: none;
+    background: var(--blue);
+    color: #fff;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 14px 22px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background .15s ease, transform .15s ease;
+  }
+
+  .submit:hover { background: var(--blue-dark); transform: translateY(-1px); }
+  .submit:disabled { opacity: .65; cursor: default; transform: none; }
+
+  .form-err {
+    min-height: 18px;
+    font-size: 13px;
+    color: #c0392b;
+  }
+
+  .form-success {
+    display: none;
+    text-align: center;
+    padding: 22px 8px;
+  }
+
+  .form-success h3 { color: var(--blue-dark); font-size: 20px; margin-bottom: 8px; }
+  .form-success p { color: var(--muted); font-size: 15px; }
+
+  .hp { position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden; }
+
   @media (max-width: 560px) {
     .card { padding: 30px 20px 26px; }
     .contacts { grid-template-columns: 1fr; }
@@ -299,9 +377,48 @@
         </a>
       </div>
 
+      <div class="divider"></div>
+
+      <section class="form-wrap" id="lead">
+        <h2 class="contacts-title">Оставить заявку на генетический тест для вашего животного</h2>
+        <p class="lead" style="margin-bottom:18px">Заполните форму — и мы свяжемся с вами в ближайшее время.</p>
+
+        <form id="lead-form" name="lead" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
+          <input type="hidden" name="form-name" value="lead">
+          <div class="hp"><label>Не заполняйте это поле: <input type="text" name="bot-field" tabindex="-1" autocomplete="off"></label></div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="f-name">Имя *</label>
+              <input id="f-name" name="name" type="text" required maxlength="100" placeholder="Как к вам обращаться">
+            </div>
+            <div class="field">
+              <label for="f-phone">Телефон *</label>
+              <input id="f-phone" name="phone" type="tel" required maxlength="32" placeholder="+7 ___ ___ __ __">
+            </div>
+            <div class="field">
+              <label for="f-email">E-mail</label>
+              <input id="f-email" name="email" type="email" maxlength="120" placeholder="you@example.com">
+            </div>
+            <div class="field">
+              <label for="f-comment">Ваш запрос</label>
+              <textarea id="f-comment" name="comment" rows="3" maxlength="2000" placeholder="Кратко опишите, какая у вас порода и какие исследования вас интересуют. Если вы не уверены, наши менеджеры с радостью вам все подскажут!"></textarea>
+            </div>
+            <label class="consent"><input type="checkbox" id="f-consent"><span>Согласен(на) на обработку персональных данных</span></label>
+            <button class="submit" type="submit">Отправить заявку</button>
+            <p class="form-err" id="form-err" role="alert"></p>
+          </div>
+        </form>
+
+        <div class="form-success" id="form-success">
+          <h3>Заявка отправлена!</h3>
+          <p id="success-note">Мы свяжемся с вами в ближайшее время.</p>
+          <p style="margin-top:10px">Если вопрос срочный — звоните <strong>+7 913 917 03 21</strong>.</p>
+        </div>
+      </section>
+
       <footer class="footer">
         <p>Приносим извинения за временные неудобства и благодарим за понимание.</p>
-        <p style="margin-top:6px">© <span id="year">2026</span> <span class="brand">ВетГеномика</span> · ветеринарная генетика</p>
+        <p style="margin-top:6px">© <span id="year">2026</span> <span class="brand">ВетГеномика</span></p>
       </footer>
     </section>
   </main>
@@ -333,6 +450,73 @@
         clearTimeout(timer);
         timer = setTimeout(function () { el.classList.remove('copied'); }, 1800);
       });
+    });
+
+    var CONFIG = { endpoint: "https://vetgenomics-lead.viftnsk.workers.dev" };
+
+    var form = document.getElementById('lead-form');
+    var errBox = document.getElementById('form-err');
+    var successBox = document.getElementById('form-success');
+
+    function showSuccess(note) {
+      form.style.display = 'none';
+      if (note) document.getElementById('success-note').textContent = note;
+      successBox.style.display = 'block';
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      errBox.textContent = '';
+      var f = form.elements;
+      var name = f['name'].value.trim();
+      var phone = f['phone'].value.trim();
+      var email = f['email'].value.trim();
+      var comment = f['comment'].value.trim();
+      if (f['bot-field'].value) return;
+      if (name.length < 2) { errBox.textContent = 'Укажите имя.'; return; }
+      if (phone.replace(/\D/g, '').length < 10) { errBox.textContent = 'Укажите корректный телефон.'; return; }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errBox.textContent = 'Проверьте адрес e-mail.'; return; }
+      if (!document.getElementById('f-consent').checked) { errBox.textContent = 'Отметьте согласие на обработку данных.'; return; }
+
+      var btn = form.querySelector('.submit');
+      btn.disabled = true;
+      btn.textContent = 'Отправляем…';
+
+      function onError() {
+        btn.disabled = false;
+        btn.textContent = 'Отправить заявку';
+        errBox.textContent = 'Не удалось отправить заявку. Позвоните: +7 913 917 03 21 или напишите: info@vetgenomics.ru.';
+      }
+
+      var data = { name: name, phone: phone, email: email, comment: comment, source: location.href };
+
+      if (CONFIG.endpoint) {
+        fetch(CONFIG.endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(data)
+        }).then(function (r) {
+          if (!r.ok) throw new Error();
+          showSuccess();
+        }).catch(onError);
+        return;
+      }
+
+      if (location.hostname.indexOf('netlify') !== -1) {
+        fetch('/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ 'form-name': 'lead', name: name, phone: phone, email: email, comment: comment }).toString()
+        }).then(function (r) {
+          if (!r.ok) throw new Error();
+          showSuccess();
+        }).catch(onError);
+        return;
+      }
+
+      var mailBody = 'Имя: ' + name + '\nТелефон: ' + phone + '\nE-mail: ' + (email || '—') + '\n\n' + (comment || '');
+      window.location.href = 'mailto:info@vetgenomics.ru?subject=' + encodeURIComponent('Заявка с сайта-заглушки') + '&body=' + encodeURIComponent(mailBody);
+      showSuccess('Мы подготовили письмо в вашем почтовом клиенте — отправьте его. Если окно почты не открылось, напишите на info@vetgenomics.ru.');
     });
   </script>
 </body>
