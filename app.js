@@ -25,7 +25,7 @@
   /* ---------- store ---------- */
 
   function defaultStore() {
-    return { pets: [], cart: [], paper: false, kennel: false, seq: 1 };
+    return { pets: [], cart: [], paper: false, kennel: false, kitsOn: false, seq: 1 };
   }
 
   function loadStore() {
@@ -75,6 +75,10 @@
   }
 
   function ensureKits() {
+    if (!store.kitsOn) {
+      store.cart = store.cart.filter(function (it) { return it.kind !== 'kit'; });
+      return;
+    }
     var seen = {};
     cartTests().forEach(function (t) {
       if (!seen[t.petId] && petById(t.petId)) {
@@ -93,6 +97,7 @@
   function calc() {
     var tests = cartTests();
     var testsSum = tests.reduce(function (a, t) { return a + t.price; }, 0);
+    var profilesSum = tests.reduce(function (a, t) { return a + (t.profile ? t.price : 0); }, 0);
     var kitsQty = 0, kitsSum = 0;
     store.cart.forEach(function (it) {
       if (it.kind === 'kit') { kitsQty += it.qty || 0; kitsSum += (it.qty || 0) * it.price; }
@@ -101,14 +106,17 @@
     var base = testsSum + kitsSum + certSum;
     var tierPct = 0;
     D.pricing.tiers.forEach(function (t) { if (base >= t.min) tierPct = t.pct; });
-    var pct = tierPct + (store.kennel ? D.pricing.kennelPct : 0);
-    if (base === 0) pct = 0;
-    var total = Math.round(base * (1 - pct / 100));
+    if (base === 0) tierPct = 0;
+    var discountable = base - profilesSum;
+    var tierDiscount = Math.round(discountable * tierPct / 100);
+    var kennelDiscount = store.kennel ? Math.round(base * D.pricing.kennelPct / 100) : 0;
+    var total = base - tierDiscount - kennelDiscount;
     return {
-      tests: tests, testsSum: testsSum, kitsQty: kitsQty, kitsSum: kitsSum,
-      certSum: certSum, base: base, tierPct: tierPct,
-      kennelPct: store.kennel ? D.pricing.kennelPct : 0,
-      pct: pct, discount: base - total, total: total
+      tests: tests, testsSum: testsSum, profilesSum: profilesSum,
+      kitsQty: kitsQty, kitsSum: kitsSum, certSum: certSum, base: base,
+      tierPct: tierPct, kennelPct: store.kennel ? D.pricing.kennelPct : 0,
+      tierDiscount: tierDiscount, kennelDiscount: kennelDiscount,
+      discount: tierDiscount + kennelDiscount, total: total
     };
   }
 
@@ -138,7 +146,7 @@
   function kitBlock() {
     return '<div class="kit-box"><strong>Набор для сбора биоматериала — ' + fmt(D.pricing.kitPrice) + '</strong>' +
       '<p style="font-size:14px;margin-top:6px">Фирменный набор: направления, зонды, конверты для биоматериала и почтовый конверт с адресом лаборатории. ' +
-      'В корзину наборы добавляются автоматически по числу животных (можно изменить). Собрать образец можно и подручными средствами — см. <a href="#/sampling">инструкцию</a>.</p></div>';
+      'Наборы добавляются в корзине отдельной опцией (по умолчанию — без наборов). Собрать образец можно и подручными средствами — см. <a href="#/sampling">инструкцию</a>.</p></div>';
   }
 
   /* ---------- views ---------- */
@@ -325,10 +333,12 @@
       '<div class="grid" style="grid-template-columns: 1.5fr 1fr; align-items:start">' +
       '<div>' + groupsHtml +
       '<div class="card" style="margin-top:14px">' +
+      '<label class="check-line"><input type="checkbox" id="opt-kits"' + (store.kitsOn ? ' checked' : '') + '>' +
+      '<span><strong>Добавить наборы для сбора биоматериала</strong> — по одному на животное, ' + fmt(D.pricing.kitPrice) + ' за набор. Можно собрать материал и подручными средствами.</span></label>' +
       '<label class="check-line"><input type="checkbox" id="opt-paper"' + (store.paper ? ' checked' : '') + '>' +
       '<span><strong>Бумажные сертификаты</strong> — +' + fmt(D.pricing.certPrice) + ' за каждый тест (сейчас ' + c.tests.length + ' ' + plural(c.tests.length, 'тест', 'теста', 'тестов') + '). Без отметки выдаются электронные версии.</span></label>' +
       '<label class="check-line"><input type="checkbox" id="opt-kennel"' + (store.kennel ? ' checked' : '') + '>' +
-      '<span><strong>Я владелец питомника</strong> — дополнительная скидка ' + D.pricing.kennelPct + '% (нужна регистрация питомника или заводской приставки на имя заказчика).</span></label>' +
+      '<span><strong>Я владелец питомника</strong> — дополнительная скидка ' + D.pricing.kennelPct + '% на весь заказ (нужна регистрация питомника или заводской приставки на имя заказчика).</span></label>' +
       '</div></div>' +
 
       '<div class="card summary">' +
@@ -337,10 +347,10 @@
       '<div class="sum-row"><span>Наборы (' + c.kitsQty + ' × ' + fmt(D.pricing.kitPrice) + ')</span><span>' + fmt(c.kitsSum) + '</span></div>' +
       (store.paper ? '<div class="sum-row"><span>Бумажные сертификаты</span><span>' + fmt(c.certSum) + '</span></div>' : '') +
       '<div class="sum-row"><span>Сумма</span><span>' + fmt(c.base) + '</span></div>' +
-      (c.pct ? '<div class="sum-row disc"><span>Скидка ' + c.pct + '%' +
-        (c.tierPct ? ' (' + c.tierPct + '% за сумму' + (c.kennelPct ? ' + ' + c.kennelPct + '% питомник' : '') + ')' : '') +
-        '</span><span>−' + fmt(c.discount) + '</span></div>' : '') +
+      (c.tierDiscount ? '<div class="sum-row disc"><span>Скидка за сумму ' + c.tierPct + '% (без учёта комплексов)</span><span>−' + fmt(c.tierDiscount) + '</span></div>' : '') +
+      (c.kennelDiscount ? '<div class="sum-row disc"><span>Скидка питомника ' + c.kennelPct + '%</span><span>−' + fmt(c.kennelDiscount) + '</span></div>' : '') +
       '<div class="sum-row total"><span>К оплате</span><span>' + fmt(c.total) + '</span></div>' +
+      (c.profilesSum ? '<p style="font-size:12px;color:var(--muted);margin-top:8px">В цену породных комплексов (профилей) скидка за сумму уже включена — к ним применяется только скидка питомника.</p>' : '') +
 
       '<h2 class="sec-title" style="margin-top:18px">Оформление заказа</h2>' +
       '<form id="order-form" novalidate><div class="form-grid">' +
@@ -377,12 +387,21 @@
     else lines.push('Бумажные сертификаты: нет (электронные)');
     lines.push('Владелец питомника: ' + (store.kennel ? 'да (+' + D.pricing.kennelPct + '%)' : 'нет'));
     lines.push('Сумма: ' + c.base + ' ₽');
-    if (c.pct) lines.push('Скидка: ' + c.pct + '% (−' + c.discount + ' ₽)');
+    if (c.tierDiscount) lines.push('Скидка за сумму ' + c.tierPct + '% (комплексы/профили без этой скидки): −' + c.tierDiscount + ' ₽');
+    if (c.kennelDiscount) lines.push('Скидка питомника ' + c.kennelPct + '%: −' + c.kennelDiscount + ' ₽');
     lines.push('ИТОГО: ' + c.total + ' ₽');
     return lines.join('\n');
   }
 
   function bindCart() {
+    var kits = document.getElementById('opt-kits');
+    if (kits) kits.addEventListener('change', function () {
+      store.kitsOn = kits.checked;
+      ensureKits();
+      save();
+      render();
+    });
+
     var paper = document.getElementById('opt-paper');
     if (paper) paper.addEventListener('change', function () {
       store.paper = paper.checked;
@@ -574,7 +593,7 @@
       name: test.name, code: test.code || '', price: test.price,
       term: test.term || '', profile: test.profile, common: test.common
     });
-    if (D.species[ctx.species] && D.species[ctx.species].hasKits && !kitFor(petId)) {
+    if (store.kitsOn && D.species[ctx.species] && D.species[ctx.species].hasKits && !kitFor(petId)) {
       store.cart.push({ id: uid(), petId: petId, kind: 'kit', name: 'Набор для сбора биоматериала', price: D.pricing.kitPrice, qty: 1 });
     }
     save();
