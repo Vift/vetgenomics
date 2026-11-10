@@ -122,19 +122,33 @@
 
   /* ---------- shared blocks ---------- */
 
+  function descOf(t) {
+    return D.diseaseDesc && D.diseaseDesc[t.name];
+  }
+
+  function descBlock(t) {
+    var d = descOf(t);
+    if (!d) return '';
+    return '<div class="test-desc"><div class="test-desc-in">' +
+      (d.i ? '<p class="inherit">Тип наследования: ' + esc(d.i) + '</p>' : '') +
+      '<p>' + esc(d.d) + '</p></div></div>';
+  }
+
   function testRow(t, ctx) {
     var badges = '';
     if (t.profile) badges += ' <span class="badge">профиль</span>';
     if (t.common) badges += ' <span class="badge common">часто в породе</span>';
+    var d = descOf(t);
     var extra = ctx
       ? '<button class="btn small gold add-btn" data-name="' + esc(t.name) + '">＋ В корзину</button>'
       : '';
     return '<div class="test-row' + (t.profile ? ' profile' : '') + '" data-name="' + esc(t.name) + '">' +
-      '<div class="test-name">' + esc(t.name) + badges +
+      '<div class="test-name' + (d ? ' has-desc' : '') + '">' + esc(t.name) + badges +
+      (d ? '<span class="hint">подробнее</span>' : '') +
       (t.code ? '<small>Код: ' + esc(t.code) + '</small>' : '') + '</div>' +
       (t.term ? '<div class="test-term">' + esc(t.term) + ' раб. дн.</div>' : '') +
       '<div class="test-price">' + (t.old ? '<span class="old">' + fmt(t.old) + '</span>' : '') + fmt(t.price) + '</div>' +
-      extra + '</div>';
+      extra + descBlock(t) + '</div>';
   }
 
   function testsBlock(title, tests, ctx) {
@@ -648,6 +662,12 @@
   }
 
   function afterRender() {
+    app.querySelectorAll('.test-name.has-desc').forEach(function (el) {
+      el.addEventListener('click', function () {
+        el.closest('.test-row').classList.toggle('open');
+      });
+    });
+
     var search = document.getElementById('breed-search');
     if (search) {
       search.addEventListener('input', function () {

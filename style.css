@@ -208,6 +208,27 @@ input:focus, textarea:focus, select:focus {
 
 .badge.common { background: #fdeaea; color: var(--err); }
 
+.test-name.has-desc { cursor: pointer; }
+.test-name.has-desc:hover { color: var(--blue); }
+.test-name .hint {
+  display: inline-block; font-size: 10.5px; color: var(--blue);
+  text-transform: uppercase; letter-spacing: .05em; margin-left: 8px;
+  border-bottom: 1px dashed rgba(27, 83, 153, .5);
+}
+
+.test-desc { display: none; flex-basis: 100%; }
+.test-row.open .test-desc { display: block; }
+
+.test-desc-in {
+  background: var(--blue-soft); border-radius: 10px;
+  padding: 12px 15px; font-size: 13.5px; color: var(--ink);
+}
+
+.test-desc .inherit {
+  font-weight: 700; color: var(--blue-dark);
+  margin-bottom: 6px; font-size: 13px;
+}
+
 /* tabs */
 .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
 
