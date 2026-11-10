@@ -137,7 +137,6 @@
   function testRow(t, ctx) {
     var badges = '';
     if (t.profile) badges += ' <span class="badge">профиль</span>';
-    if (t.common) badges += ' <span class="badge common">часто в породе</span>';
     var d = descOf(t);
     var extra = ctx
       ? '<button class="btn small gold add-btn" data-name="' + esc(t.name) + '">＋ В корзину</button>'
@@ -170,7 +169,7 @@
       '<div><h1>Генетические тесты для ваших животных</h1>' +
       '<p>Наследственные заболевания, окрасы и типы шерсти, ДНК-паспорта и комплексный тест КанОмикс. Соберите заказ для нескольких питомцев — скидка зависит от суммы.</p>' +
       '<div class="hero-actions">' +
-      '<a class="btn" href="#/dogs">Выбрать вид и породу</a>' +
+      '<a class="btn" href="#/species">Выбрать вид и породу</a>' +
       '<a class="btn ghost" href="#/canomix">О тесте КанОмикс</a></div></div>' +
       '<div class="hero-side"><h3>Как это работает</h3><ul>' +
       '<li>Выберите породу и тесты</li>' +
@@ -247,6 +246,16 @@
       '<div class="card prose"><p>Для установления родства необходимо оформить ДНК-паспорт на всех животных. Родство устанавливается только между жеребятами и их родителями. Определение родства по паспортам нашей лаборатории — бесплатно для клиентов.</p>' +
       testRow(sp.dna, true) + '</div></section>' +
       '<a class="btn" href="#/cart">Перейти в корзину</a>';
+  }
+
+  function viewSpeciesSelect() {
+    return '<h1 class="page-title">Выберите вид животного</h1>' +
+      '<p class="page-sub">Для собак и кошек — список пород с характерными заболеваниями, окрасами и типами шерсти. Для лошадей — сразу список тестов.</p>' +
+      '<div class="grid cols-3">' +
+      '<a class="sp-card" href="#/dogs"><div class="emoji">🐶</div><h3>Собаки</h3><p>186 пород, профили заболеваний, окрасы и типы шерсти</p></a>' +
+      '<a class="sp-card" href="#/cats"><div class="emoji">🐱</div><h3>Кошки</h3><p>Породные панели, группа крови, окрасы</p></a>' +
+      '<a class="sp-card" href="#/horses"><div class="emoji">🐴</div><h3>Лошади</h3><p>Наследственные заболевания, масти, ДНК-паспорт</p></a>' +
+      '</div>';
   }
 
   function viewCanomix() {
@@ -647,6 +656,7 @@
         break;
       case 'horses': html = viewHorses(); break;
       case 'canomix': html = viewCanomix(); break;
+      case 'species': html = viewSpeciesSelect(); break;
       case 'sampling': html = viewSampling(); break;
       case 'discounts': html = viewDiscounts(); break;
       case 'cart': html = viewCart(); break;
