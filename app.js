@@ -222,7 +222,18 @@
     var breed = findBreed(spKey, breedName);
     if (!breed) return '<h1 class="page-title">Порода не найдена</h1><p><a href="#/' + spKey + '">К списку пород</a></p>';
 
-    var ctx = { species: spKey, breed: breedName, tests: breed.tests.concat(sp.colors) };
+    var extraTests = [];
+    var dnaHtml = '';
+    if (spKey === 'dogs' && sp.dna) {
+      var dna = { name: sp.dna.name, code: sp.dna.code, price: sp.dna.price, term: sp.dna.term };
+      if (breed.name === 'Немецкая овчарка') dna.price = 2300;
+      extraTests.push(dna);
+      dnaHtml = '<section class="section"><h2 class="sec-title">Установление родства, ДНК-паспорт</h2>' +
+        '<div class="card prose"><p>Для установления родства собак необходимо оформить ДНК-паспорт на всех животных. Родство устанавливается только между щенками и их родителями, родство братьев/сестер без хотя бы одного родителя не определяется. Определение родства по паспортам нашей лаборатории — бесплатно для наших клиентов.</p>' +
+        testRow(dna, true) + '</div></section>';
+    }
+
+    var ctx = { species: spKey, breed: breedName, tests: breed.tests.concat(sp.colors).concat(extraTests) };
     window.__ctx = ctx;
 
     return '<p style="font-size:13px"><a href="#/' + spKey + '">← ' + esc(sp.label) + '</a></p>' +
@@ -230,6 +241,7 @@
       '<p class="page-sub">Выберите тесты и добавьте их в корзину — система предложит указать питомца. Тесты добавляются для конкретного животного этой породы.</p>' +
       testsBlock('Заболевания и профили', breed.tests, true) +
       testsBlock('Окрасы и типы шерсти', sp.colors, true) +
+      dnaHtml +
       (sp.hasKits ? kitBlock() : '') +
       '<a class="btn" href="#/cart">Перейти в корзину</a>';
   }
