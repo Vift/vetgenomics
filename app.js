@@ -97,7 +97,9 @@
   function calc() {
     var tests = cartTests();
     var testsSum = tests.reduce(function (a, t) { return a + t.price; }, 0);
-    var profilesSum = tests.reduce(function (a, t) { return a + (t.profile ? t.price : 0); }, 0);
+    var excludedSum = tests.reduce(function (a, t) {
+      return a + ((t.profile || t.name === D.canomix.name || t.code === 'CanOmics') ? t.price : 0);
+    }, 0);
     var kitsQty = 0, kitsSum = 0;
     store.cart.forEach(function (it) {
       if (it.kind === 'kit') { kitsQty += it.qty || 0; kitsSum += (it.qty || 0) * it.price; }
@@ -107,12 +109,12 @@
     var tierPct = 0;
     D.pricing.tiers.forEach(function (t) { if (base >= t.min) tierPct = t.pct; });
     if (base === 0) tierPct = 0;
-    var discountable = base - profilesSum;
+    var discountable = base - excludedSum;
     var tierDiscount = Math.round(discountable * tierPct / 100);
     var kennelDiscount = store.kennel ? Math.round(base * D.pricing.kennelPct / 100) : 0;
     var total = base - tierDiscount - kennelDiscount;
     return {
-      tests: tests, testsSum: testsSum, profilesSum: profilesSum,
+      tests: tests, testsSum: testsSum, excludedSum: excludedSum,
       kitsQty: kitsQty, kitsSum: kitsSum, certSum: certSum, base: base,
       tierPct: tierPct, kennelPct: store.kennel ? D.pricing.kennelPct : 0,
       tierDiscount: tierDiscount, kennelDiscount: kennelDiscount,
@@ -382,10 +384,10 @@
       '<div class="sum-row"><span>Наборы (' + c.kitsQty + ' × ' + fmt(D.pricing.kitPrice) + ')</span><span>' + fmt(c.kitsSum) + '</span></div>' +
       (store.paper ? '<div class="sum-row"><span>Бумажные сертификаты</span><span>' + fmt(c.certSum) + '</span></div>' : '') +
       '<div class="sum-row"><span>Сумма</span><span>' + fmt(c.base) + '</span></div>' +
-      (c.tierDiscount ? '<div class="sum-row disc"><span>Скидка за сумму ' + c.tierPct + '% (без учёта комплексов)</span><span>−' + fmt(c.tierDiscount) + '</span></div>' : '') +
+      (c.tierDiscount ? '<div class="sum-row disc"><span>Скидка за сумму ' + c.tierPct + '% (без учёта комплексов и КанОмикс)</span><span>−' + fmt(c.tierDiscount) + '</span></div>' : '') +
       (c.kennelDiscount ? '<div class="sum-row disc"><span>Скидка питомника ' + c.kennelPct + '%</span><span>−' + fmt(c.kennelDiscount) + '</span></div>' : '') +
       '<div class="sum-row total"><span>К оплате</span><span>' + fmt(c.total) + '</span></div>' +
-      (c.profilesSum ? '<p style="font-size:12px;color:var(--muted);margin-top:8px">В цену породных комплексов (профилей) скидка за сумму уже включена — к ним применяется только скидка питомника.</p>' : '') +
+      (c.excludedSum ? '<p style="font-size:12px;color:var(--muted);margin-top:8px">В цену породных комплексов (профилей) и теста КанОмикс скидка за сумму уже включена — к ним применяется только скидка питомника.</p>' : '') +
 
       '<h2 class="sec-title" style="margin-top:18px">Оформление заказа</h2>' +
       '<form id="order-form" novalidate><div class="form-grid">' +
@@ -422,7 +424,7 @@
     else lines.push('Бумажные сертификаты: нет (электронные)');
     lines.push('Владелец питомника: ' + (store.kennel ? 'да (+' + D.pricing.kennelPct + '%)' : 'нет'));
     lines.push('Сумма: ' + c.base + ' ₽');
-    if (c.tierDiscount) lines.push('Скидка за сумму ' + c.tierPct + '% (комплексы/профили без этой скидки): −' + c.tierDiscount + ' ₽');
+    if (c.tierDiscount) lines.push('Скидка за сумму ' + c.tierPct + '% (комплексы и КанОмикс без этой скидки): −' + c.tierDiscount + ' ₽');
     if (c.kennelDiscount) lines.push('Скидка питомника ' + c.kennelPct + '%: −' + c.kennelDiscount + ' ₽');
     lines.push('ИТОГО: ' + c.total + ' ₽');
     return lines.join('\n');
